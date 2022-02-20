@@ -1,0 +1,93 @@
+defaults:
+    - agent: sac
+
+agent_algo: sac 
+goal_algo: cusp #cusp, asp, goalgan, dr
+
+num_eval_episodes: 10
+eval_every: 10
+eval_alice: False 
+no_cuda: False
+
+# logger
+log_frequency: 10000
+log_save_tb: True
+
+num_train_steps: 1e6
+seed: 1
+cuda_deterministic: False
+num_processes: 1
+num_steps: 1e4
+num_env_steps: 10e6
+env_name: point_mass
+save_dir: ./trained_models/
+use_proper_time_limits: False
+exp_name: EX_0
+gamma: 0.99
+
+# ASP
+num_steps_alice: 1000
+num_steps_bob: 1000
+save_every: 100
+goal_buffer_size: 200
+use_bc: False
+diversity_bonus: False
+magnitude_bonus: False
+debug_video_freq: 1000
+asp_reward: dense #sparse for success only, dense for -Bob reward
+
+#Goal generator
+latent_dim: 4
+num_goal_gen_updates: 100 # number of updates per episode
+symmetrize: False #if true, have goal generator for both alice and bob
+# annealing
+double_alice_utility: False # compute regret with double alice utlity
+annealing_start_weight: 1 # weight for Alice utility
+annealing_end_weight: 1 # weight for Alice utility
+annealing_length: ${num_steps} # number of steps to linearly decay annealing_start_weight over
+#num goals
+num_goals: 1
+num_subgoals: 1 # per round
+#SAC goal generator
+goal_replay_buffer_capacity: 2e4 # for SAC goal generator only
+goal_temperature: True
+#stale regrets
+before_update_stale_regrets: ${num_steps} # for SAC goal generator only, steps before updating stale regrets; if num_steps then never update stale regrets
+stale_regret_coeff: .9 # scale for old regrets 
+num_stale_updates: ${goal_replay_buffer_capacity} # number of goals to update 
+#infeasible goals
+infeasible_dims: 0 # Additional infeasible dimensions to add to goal space
+
+replay_buffer_capacity: ${num_env_steps}
+num_seed_steps: 5000
+save_video: True
+
+goal_generator:
+    class: agents.goal_generator.GoalGenerator
+    params: 
+        goal_algo: ${goal_algo}
+        latent_dim: ${latent_dim}
+        hidden_size: 128
+        trunk_hidden_size: 128
+        goals_embed_dim: 256
+        lr: 1e-4
+        eps: 1e-5
+
+
+# slurm params
+submit: False
+slurm_mem: 80
+slurm_timeout: 72
+slurm_partition: learnfair
+num_gpus: 1
+num_workers: 0
+num_nodes: 1
+logdir: ./logdir/${exp_name}_${env_name}
+
+# hydra configuration
+hydra:
+    name: ${env}
+    run:
+        dir: ./logdir/${exp_name}_${env_name}
+
+avec_loss: False

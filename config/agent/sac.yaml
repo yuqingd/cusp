@@ -1,0 +1,57 @@
+agent:
+  name: sac
+  class: agents.sac.SACAgent
+  params:
+    obs_dim: ??? # to be specified later
+    goal_dim: ??? # to be specified later
+    action_dim: ??? # to be specified later
+    action_range: ??? # to be specified later
+    device: ??? # to be specified later
+    critic_cfg: ${double_q_critic}
+    actor_cfg: ${diag_gaussian_actor}
+    discount: ${gamma}
+    init_temperature: 0.1
+    alpha_lr: 1e-4
+    alpha_betas: [0.9, 0.999]
+    actor_lr: 1e-4
+    goal_actor_lr: 1e-4
+    actor_betas: [0.9, 0.999]
+    actor_update_frequency: 1
+    critic_lr: 1e-4
+    goal_critic_lr: 1e-4
+    critic_betas: [0.9, 0.999]
+    critic_tau: 0.005
+    critic_target_update_frequency: 2
+    batch_size: 1024
+    learnable_temperature: true
+    avec_loss: false
+    bc_actor_lr: 1e-6
+
+double_q_critic:
+  class: agents.critic.DoubleQCritic
+  params:
+    obs_dim: ${agent.params.obs_dim}
+    goal_dim: ${agent.params.goal_dim}
+    action_dim: ${agent.params.action_dim}
+    hidden_dim: 1024
+    hidden_depth: 2
+    
+diag_gaussian_actor:
+  class: agents.actor.DiagGaussianActor
+  params:
+    obs_dim: ${agent.params.obs_dim}
+    goal_dim: ${agent.params.goal_dim}
+    action_dim: ${agent.params.action_dim}
+    hidden_depth: 2
+    hidden_dim: 1024
+    log_std_bounds: [-5, 2]
+
+num_updates_bc: 1
+batch_updates: False
+num_batch_updates: ${num_steps_alice}  #number of batch updates to do to account for not updating live, only used when batch_updates=True
+
+#HER
+use_her: False
+HER_k: 4 #number of relabel
+sep_goal_embed: False
+

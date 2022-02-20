@@ -1,0 +1,12 @@
+.idea/
+.ipynb_checkpoints/
+data/
+*.pyc
+__pycache__
+logdir/
+robogym/
+.vscode
+eval_*/
+debug_*/
+snapshots/
+*logdir*
