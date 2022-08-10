@@ -15,41 +15,62 @@ def play_cusp(env, trainer, goal_trainer, goals_arr, step, args, device, L):
     bob_utilities = []
     alice_successes = []
     bob_successes = []
+    if args.dummy_env:
+        alice_utilities = []
+        bob_utilities = []
+        perturb = step * args.moving_regret_coeff
+        center = 0.1
 
-    if args.symmetrize:
-        # give easier goal first, then harder goal (goal generation order is alice friendly goal gen first, then bob friendly)
-        for i, goal in enumerate(goals):
-            alice_success = trainer.generate_traj(ALICE, goal)
-            alice_utility = trainer.compute_agent_utilities(args.gamma, ALICE, step + i)
-
-            alice_utilities.append(alice_utility.cpu())
-            alice_successes.append(alice_success.mean())
-
-        for i, goal in enumerate(torch.flip(goals, [0])):
-            bob_success = trainer.generate_traj(BOB, goal)
-            bob_utility = trainer.compute_agent_utilities(args.gamma, BOB, step + i)
-
-            bob_utilities.append(bob_utility.cpu())
-            bob_successes.append(bob_success.mean())
-        
-        # to compute regret, flip bob utilities/successes to match alice goal order
-        bob_utilities = bob_utilities[::-1]
-        bob_successes = bob_successes[::-1]
-
-    else:
         for goal in goals:
-            #evaluate alice on goal
-            alice_success = trainer.generate_traj(ALICE, goal)
-            #evaluate bob on goal
-            bob_success = trainer.generate_traj(BOB, goal)
+            x = goal[0, 0] 
+            y = goal[0, 1] 
+            regret = (x+center-perturb) ** 2 + (y-center+perturb) ** 2 
+            regret = torch.clamp(regret, max=.01)
+            regret = -regret.unsqueeze(0).unsqueeze(0) * 100 
+            alice_utilities.append(regret)
+            bob_utilities.append(0)
 
-            alice_utility, bob_utility = trainer.compute_utilities(args.gamma, step)
-                
-            alice_utilities.append(alice_utility.cpu())
-            bob_utilities.append(bob_utility.cpu())
+        if len(goals) > 1:
+            alice_utilities = torch.stack(alice_utilities)
+            bob_utilities = torch.stack(bob_utilities)
+        else:
+            alice_utilities = torch.FloatTensor(alice_utilities)
+            bob_utilities = torch.FloatTensor(bob_utilities)
+    else:
+        if args.symmetrize:
+            # give easier goal first, then harder goal (goal generation order is alice friendly goal gen first, then bob friendly)
+            for i, goal in enumerate(goals):
+                alice_success = trainer.generate_traj(ALICE, goal)
+                alice_utility = trainer.compute_agent_utilities(args.gamma, ALICE, step + i)
 
-            alice_successes.append(alice_success.mean())
-            bob_successes.append(bob_success.mean())
+                alice_utilities.append(alice_utility.cpu())
+                alice_successes.append(alice_success.mean())
+
+            for i, goal in enumerate(torch.flip(goals, [0])):
+                bob_success = trainer.generate_traj(BOB, goal)
+                bob_utility = trainer.compute_agent_utilities(args.gamma, BOB, step + i)
+
+                bob_utilities.append(bob_utility.cpu())
+                bob_successes.append(bob_success.mean())
+            
+            # to compute regret, flip bob utilities/successes to match alice goal order
+            bob_utilities = bob_utilities[::-1]
+            bob_successes = bob_successes[::-1]
+
+        else:
+            for goal in goals:
+                #evaluate alice on goal
+                alice_success = trainer.generate_traj(ALICE, goal)
+                #evaluate bob on goal
+                bob_success = trainer.generate_traj(BOB, goal)
+
+                alice_utility, bob_utility = trainer.compute_utilities(args.gamma, step)
+                    
+                alice_utilities.append(alice_utility.cpu())
+                bob_utilities.append(bob_utility.cpu())
+
+                alice_successes.append(alice_success.mean())
+                bob_successes.append(bob_success.mean())
 
     # TODO: clean this up
     if len(goals) > 1:
@@ -70,6 +91,11 @@ def play_cusp(env, trainer, goal_trainer, goals_arr, step, args, device, L):
     print("{} - Bob success: {} ".format(step,  torch.mean(bob_successes)))
     L.log('train/alice/success', torch.mean(alice_successes), step)
     L.log('train/bob/success', torch.mean(bob_successes), step) 
+
+    if args.dummy_env and step > args.before_update_stale_regrets:
+        perturb = step * args.moving_regret_coeff
+        goal_trainer.update_dummy_regrets(perturb)
+    
     goal_trainer.update(goals, alice_utilities, bob_utilities)
     regrets = []
 

@@ -58,6 +58,11 @@ num_stale_updates: ${goal_replay_buffer_capacity} # number of goals to update
 #infeasible goals
 infeasible_dims: 0 # Additional infeasible dimensions to add to goal space
 
+# To run toy environment instead
+dummy_env: False
+moving_regret_coeff: 0
+
+
 replay_buffer_capacity: ${num_env_steps}
 num_seed_steps: 5000
 save_video: True

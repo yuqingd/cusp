@@ -145,12 +145,14 @@ class Runner(submitit.helpers.Checkpointable):
                 if len(goals_arr) > 0:
                     with open(log_dir + '/goals.npy', 'wb') as f:
                         np.save(f, goals_arr)
-                        plot(goals_arr, log_dir + '/goals_plot_' + str(step) + '.png')
+                        plot(goals_arr, log_dir + '/goals_plot_' + str(step) + '.png',
+                            contour=args.dummy_env, perturb=step*args.moving_regret_coeff)
         
         envs.close()
         with open(log_dir + '/goals.npy', 'wb') as f:
             np.save(f, goals_arr)
-        plot(goals_arr, log_dir + '/goals_plot_' + str(step) + '.png')
+        plot(goals_arr, log_dir + '/goals_plot_' + str(step) + '.png',
+                            contour=args.dummy_env, perturb=step*args.moving_regret_coeff)
 
 if __name__ == '__main__':
     main()

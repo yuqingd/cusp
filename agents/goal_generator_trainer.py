@@ -231,6 +231,19 @@ class GoalGeneratorTrainer:
 
         return old_regret.mean(), actor_Q.mean(), rand_goals
 
+    def update_dummy_regrets(self, perturb):
+        obs, all_goals, old_regret, next_obs, not_done, not_done_no_max, idxs = self.sac_goal_buffer.sample(self.sac_goal_buffer.idx, random=True, idxes=True)
+        
+        x = all_goals[:, 0] 
+        y = all_goals[:, 1] 
+        center = 0.1
+        regret = (x+center-perturb) ** 2 + (y-center+perturb) ** 2
+        regret = torch.clamp(regret, max=.01)
+        regret = -regret.unsqueeze(-1) * 100 
+
+        self.sac_goal_buffer.update_regrets(idxs, torch.hstack([regret.cpu(), torch.zeros_like(regret.cpu())]), self.cfg.stale_regret_coeff) #replace old regrets with Q_value estimates
+
+
     def save(self, model_save_path, step):
         if self.goal_algo == 'cusp':
             assert os.path.isdir(model_save_path+'/ep_'+str(step))
