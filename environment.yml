@@ -43,6 +43,7 @@ dependencies:
     - grpcio==1.34.0
     - gym==0.18.0
     - h5py==3.1.0
+    - hydra-core==0.11.3
     - idna==2.10
     - imageio==2.9.0
     - imageio-ffmpeg==0.4.3
