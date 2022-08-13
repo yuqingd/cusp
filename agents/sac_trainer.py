@@ -495,14 +495,12 @@ class SACTrainer:
                 steps = 0
                 done = False
                 obs = self.env.reset()
-                # goals.append(torch.FloatTensor(obs['xyz_state']))
-                goals.append(torch.FloatTensor(np.concatenate((obs['xyz_state'], [[.25]] * (2 * np.random.rand(1) - 1 )), axis=-1)))
+                goals.append(torch.FloatTensor(obs['xyz_state']))
             else:
                 with utils.eval_mode(self.bob):
                     action = self.bob.act(obs["full_state_with_goal"], sample=True)
                 obs, _, done, _ = self.env.step(action)
-                # goals.append(torch.FloatTensor(obs['xyz_state']))
-                goals.append(torch.FloatTensor(np.concatenate((obs['xyz_state'],  [[.25]] * (2 * np.random.rand(1) - 1 )), axis=-1)))
+                goals.append(torch.FloatTensor(obs['xyz_state']))
         goals = torch.stack(goals)
         return goals.reshape(size // self.args.num_subgoals, goals.shape[1], goals.shape[-1] * self.args.num_subgoals).to(self.device)
 
