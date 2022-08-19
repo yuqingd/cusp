@@ -100,6 +100,8 @@ class Runner(submitit.helpers.Checkpointable):
         
         # Initialize learner trainer
         trainer = SACTrainer(args, L, envs, device_str, log_dir, model_save_path, reload_model)
+        if args.agent_algo == 'ppo':
+            trainer = PPOTrainer(args, L, envs, device_str, log_dir, model_save_path, reload_model)
         
         # Initialize goal generator trainer
         if args.goal_algo in ['cusp', 'goalgan']:   

@@ -96,3 +96,17 @@ hydra:
         dir: ./logdir/${exp_name}_${env_name}
 
 avec_loss: False
+
+# PPO trainer configs
+ppo_agent:
+  name: ppo
+  class: agents.ppo.PPO
+  params:
+    lr: 3e-4
+    eps: 1e-5
+    entropy_coef: 0.01
+    value_loss_coef: 0.01
+    max_grad_norm: 0.5
+    ppo_epoch: 10
+    num_mini_batch: 1
+    clip_param: 0.2

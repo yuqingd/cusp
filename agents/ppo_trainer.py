@@ -228,7 +228,7 @@ class PPOTrainer:
         alice_utility = self.alice_rollouts.get_utility(gamma)
         bob_utility = self.bob_rollouts.get_utility(gamma)
 
-        return alice_utility, bob_utility, None
+        return alice_utility, bob_utility
 
     def get_bob_reward(self):
         # Return most recent Bob reward for dense-ASP
