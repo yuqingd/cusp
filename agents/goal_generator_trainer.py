@@ -131,21 +131,23 @@ class GoalGeneratorTrainer:
         init_goal_obs["latent"] = z
 
         if self.goal_algo == 'goalgan': 
-            if self.step > 0 and dict(self.cur_goals): 
+            if self.step > 0:
+                # To prevent forgetting, keep half of the old goals
                 idx = np.random.choice(self.goal_idx, size=100)
                 old_goals = self.goal_buffer[idx]
                 new_goals, _ = self.goal_agent.sample_states_with_noise(200)
                 new_goals = new_goals.reshape(200, self.cfg.num_processes, -1)
-                goals = torch.cat([raw_goals, old_goals], dim=0)
+                goals = torch.cat([new_goals, old_goals], dim=0)
             else: 
-                new_goals, _ = self.goal_agent.sample_states_with_noise(200)
-                new_goals = new_goals.reshape(200, self.cfg.num_processes, -1)
+                # Randomly sample to begin with
+                new_goals, _ = self.goal_agent.sample_states_with_noise(500)
+                new_goals = new_goals.reshape(500, self.cfg.num_processes, -1)
                 goals = new_goals
             
-            old_buff = self.goal_buffer[:-200].clone().detach()
-            self.goal_buffer[200:].copy_(old_buff)
-            self.goal_buffer[:200].copy_(new_goals.detach())
-            self.goal_idx = min(self.goal_idx + 200, len(self.goal_buffer))
+            old_buff = self.goal_buffer[:-len(goals)].clone().detach()
+            self.goal_buffer[len(goals):].copy_(old_buff)
+            self.goal_buffer[:len(goals)].copy_(goals.detach())
+            self.goal_idx = min(self.goal_idx + len(goals), len(self.goal_buffer))
 
             self.cur_goals = {tuple(goal.detach().clone()): [] for goal in goals}
             self.step += 1

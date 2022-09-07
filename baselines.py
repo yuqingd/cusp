@@ -53,19 +53,27 @@ def play_goalgan(env, trainer, goal_trainer, goals_arr, step, args, device, L):
         dis_loss, gen_loss = goal_trainer.goal_agent.pretrain(states=feasible_goals, logger=L, outer_iters=250)
         print("Pretrain Loss of Gen and Dis: ", gen_loss, dis_loss)
         goals = goal_trainer.generate_goal()
+
+        for goal in list(goal_trainer.cur_goals.keys()):
+            trainer.generate_traj(BOB, list(goal)) # train on all the feasible goals
     else:
         if step % 500 != 0:
             bob_successes = []
+            goal = list(goal_trainer.cur_goals.keys())[step % len(goal_trainer.cur_goals.keys())]
+            avg_bob_success = []
             for i in range(args.num_goals):
-                goal = random.sample(list(goal_trainer.cur_goals.keys()), 1)[0]
-                bob_success = trainer.generate_traj(BOB, list(goal)) #no alice in gan formulation
-                goal_trainer.cur_goals[goal].append(bob_success)
+                avg_bob_success.append(trainer.generate_traj(BOB, list(goal), update=False)) #no alice in gan formulation
+                # Don't do extra updates while sampling the success rate of the same goal. We update the agent across all goals periodically.
 
-                goals_arr.append(goal[0].detach().cpu().numpy())
-                bob_successes.append(bob_success.cpu().numpy())
+            goal_trainer.cur_goals[goal].append(torch.mean(torch.stack(avg_bob_success)))
+
+            goals_arr.append(goal[0].detach().cpu().numpy())
+            bob_successes.append(torch.mean(torch.stack(avg_bob_success)).cpu().numpy())
             L.log('train/bob/success', np.mean(bob_successes), step) #log the modified reward for alice
             print("{} - Bob success: {} ".format(step,   np.mean(bob_successes)))
-        else: #update gan every 500 episodes
+        else: #update every 500 episodes
+            for goal in list(goal_trainer.cur_goals.keys()):
+                trainer.generate_traj(BOB, list(goal)) # train on all the sampled goals
             goal_trainer.update_gan()
             goals = goal_trainer.generate_goal()
 

@@ -29,7 +29,7 @@ gamma: 0.99
 num_steps_alice: 1000
 num_steps_bob: 1000
 save_every: 100
-goal_buffer_size: 200
+goal_buffer_size: 500
 use_bc: False
 diversity_bonus: False
 magnitude_bonus: False
